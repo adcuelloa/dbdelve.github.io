@@ -14,6 +14,7 @@ import { TOUR } from "@/data/tour";
   </div>
   <div class="tour__tabs" data-tabs>
     <div role="tablist" aria-label="Product views">
+      <span class="tour__pill" data-pill aria-hidden="true"></span>
       {
         TOUR.map((v, i) => (
           <button
@@ -62,14 +63,48 @@ import { TOUR } from "@/data/tour";
 </section>
 
 <style is:global>
+  /* Every panel shares one cell, so the frame keeps the tallest view's size and
+     the page never shifts when the view changes (see initTourTabs). */
+  .tour__tabs {
+    display: grid;
+  }
+  .tour__tabs > [role="tablist"] {
+    position: relative;
+    grid-row: 1;
+  }
+  .tour__tabs [role="tab"] {
+    position: relative;
+    z-index: 1;
+    transition: color 0.3s var(--ease-out);
+  }
+  /* The pill slides under the selected tab once tour.ts has placed it; until
+     then (and without JS) the tab keeps its own background. */
+  .tour__pill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 999px;
+    background: var(--color-text);
+    pointer-events: none;
+    opacity: 0;
+  }
+  .tour__tabs[data-pill-ready] .tour__pill {
+    opacity: 1;
+  }
+  .tour__tabs[data-pill-ready] [role="tab"][aria-selected="true"] {
+    background: transparent;
+  }
   .tour__panel {
+    grid-area: 2 / 1;
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(16rem, 1fr);
     gap: 2rem;
     align-items: start;
   }
-  .tour__panel[hidden] {
-    display: none;
+  /* Before tour.ts runs (or without JS) idle panels are [hidden]; after, they
+     stay laid out in the shared cell, invisible. */
+  .tour__panel[data-off] {
+    visibility: hidden;
   }
   .spot {
     position: absolute;
@@ -134,12 +169,13 @@ import { TOUR } from "@/data/tour";
 <script>
   import { mount } from "@/lib/lifecycle";
   import { initTabs } from "@/lib/ui/tabs";
-  import { initTour } from "@/lib/ui/tour";
+  import { initTour, initTourTabs } from "@/lib/ui/tour";
 
   mount((signal) => {
     const tour = document.getElementById("tour");
-    if (!tour) return;
-    initTabs(tour, signal);
+    const box = tour?.querySelector<HTMLElement>("[data-tabs]");
+    if (!tour || !box) return;
+    initTabs(tour, signal, initTourTabs(box, signal));
     initTour(tour, signal);
   });
 </script>

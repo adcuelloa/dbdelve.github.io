@@ -37,7 +37,8 @@ gsap.registerPlugin(ScrollTrigger);
 const waterlineY = (vh: number) => Math.max(vh * 0.15, 152);
 
 const AIMS: Record<string, string> = {
-  tour: ".tour__panel:not([hidden]) .spot.is-active",
+  // Idle tour panels are data-off, and one fading out is data-leaving: aim at the one arriving.
+  tour: ".tour__panel:not([hidden], [data-off], [data-leaving]) .spot.is-active",
   sonar: '[data-engine][aria-pressed="true"]',
   deep: "[data-logo-bars]",
 };

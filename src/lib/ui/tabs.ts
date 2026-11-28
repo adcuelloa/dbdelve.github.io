@@ -1,18 +1,27 @@
 // ARIA tabs: arrow keys, Home and End move between tabs; the platform tabs
-// open on the visitor's own platform.
+// open on the visitor's own platform. A `show` hook takes over swapping the
+// panels (the tour animates it); without one, panels are shown and hidden at once.
 import { announceAim } from "@/lib/lifecycle";
 
-export function initTabs(root: ParentNode, signal: AbortSignal) {
+/** Shows the newly selected tab's panel; `prev` is the tab selected before. */
+export type ShowPanel = (tab: HTMLButtonElement, prev: HTMLButtonElement | null) => void;
+
+export const panelOf = (tab: HTMLButtonElement) =>
+  document.getElementById(tab.getAttribute("aria-controls") ?? "");
+
+export function initTabs(root: ParentNode, signal: AbortSignal, show?: ShowPanel) {
   for (const box of root.querySelectorAll<HTMLElement>("[data-tabs]")) {
     const tabs = [...box.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
     const select = (tab: HTMLButtonElement, focus = false) => {
+      const prev = tabs.find((t) => t.getAttribute("aria-selected") === "true") ?? null;
       for (const t of tabs) {
         const on = t === tab;
         t.setAttribute("aria-selected", String(on));
         t.tabIndex = on ? 0 : -1;
-        const panel = document.getElementById(t.getAttribute("aria-controls") ?? "");
-        if (panel) panel.hidden = !on;
+        const panel = panelOf(t);
+        if (panel && !show) panel.hidden = !on;
       }
+      if (show && tab !== prev) show(tab, prev);
       if (focus) tab.focus();
       announceAim();
     };
